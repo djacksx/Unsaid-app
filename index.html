@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Weigh">
+<meta name="theme-color" content="#ffffff">
+<title>Weigh</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: #fff; color: #111; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+  .screen { display: none; min-height: 100dvh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* INTRO */
+  #screen-intro {
+    padding: 0; background: #fff;
+    justify-content: flex-start;
+  }
+  .intro-top {
+    padding: 56px 24px 32px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  .app-name {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 22px; font-weight: 700; color: #000;
+    margin-bottom: 4px; letter-spacing: -0.01em;
+  }
+  .app-name-sub {
+    font-size: 13px; color: #999; line-height: 1.4;
+  }
+  .intro-form { padding: 28px 24px; flex: 1; display: flex; flex-direction: column; gap: 0; }
+  .field-label {
+    font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    font-weight: 600; color: #555; margin-bottom: 10px; display: block;
+  }
+  textarea.dilemma {
+    width: 100%; background: #fff; border: none; border-bottom: 1.5px solid #ccc;
+    padding: 0 0 12px; color: #111; font-family: Georgia, serif;
+    font-size: 17px; line-height: 1.6; resize: none; outline: none;
+    min-height: 80px; transition: border-color 0.2s;
+  }
+  textarea.dilemma:focus { border-bottom-color: #000; }
+  textarea.dilemma::placeholder { color: #ccc; font-style: italic; }
+
+  .btn-start {
+    margin-top: 28px; align-self: flex-start;
+    padding: 10px 22px; background: #000; color: #fff; border: none;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+    letter-spacing: 0.04em; cursor: pointer; border-radius: 4px; transition: opacity 0.2s;
+  }
+  .btn-start:disabled { background: #ccc; cursor: default; }
+  .btn-start:not(:disabled):active { opacity: 0.75; }
+
+  /* ANALYSIS */
+  #screen-analysis { flex-direction: column; background: #fff; }
+
+  .a-header {
+    background: #fff; border-bottom: 2px solid #000;
+    padding: 10px 14px; display: flex; align-items: center;
+    gap: 10px; position: sticky; top: 0; z-index: 10;
+  }
+  .btn-back {
+    background: none; border: 1px solid #555; color: #111;
+    padding: 4px 10px; font-size: 11px; letter-spacing: 0.05em; cursor: pointer;
+    font-family: 'Inter', sans-serif; white-space: nowrap;
+  }
+  .a-header-inner { flex: 1; min-width: 0; }
+  .a-eyebrow { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #999; }
+  .a-dilemma { font-family: Georgia, serif; font-style: italic; font-size: 13px; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #d0d0d0; }
+  .tab-btn {
+    padding: 12px 0; background: #f7f7f7; border: none;
+    border-bottom: 3px solid transparent; font-family: Georgia, serif;
+    font-size: 15px; font-weight: 700; color: #888; cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:first-child { border-right: 1px solid #d0d0d0; }
+  .tab-btn.active { background: #fff; color: #000; border-bottom-color: #000; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .a-body { flex: 1; overflow-y: auto; padding-bottom: 100px; }
+
+  .section-block { padding: 18px 16px; border-bottom: 1px solid #d0d0d0; }
+  .section-heading {
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    font-weight: 700; color: #888; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-heading::after { content: ''; flex: 1; height: 1px; background: #d0d0d0; }
+
+  .considerations { background: #f7f7f7; border-left: 3px solid #555; padding: 10px 14px; margin-bottom: 14px; }
+  .c-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: #888; margin-bottom: 8px; }
+  .c-q { font-family: Georgia, serif; font-style: italic; font-size: 13px; color: #555; line-height: 1.5; padding: 5px 0; border-bottom: 1px dotted #ccc; }
+  .c-q:last-child { border-bottom: none; }
+
+  .item-list { list-style: none; margin-bottom: 10px; }
+  .item-chip { display: flex; align-items: flex-start; gap: 8px; padding: 10px 0; border-bottom: 1px dotted #d0d0d0; font-size: 14px; line-height: 1.5; color: #111; }
+  .item-chip:last-child { border-bottom: none; }
+  .item-dash { color: #aaa; flex-shrink: 0; margin-top: 2px; font-size: 12px; }
+  .item-text { flex: 1; font-family: Georgia, serif; }
+  .btn-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 11px; flex-shrink: 0; padding: 0; line-height: 1; margin-top: 3px; transition: color 0.15s; }
+  .btn-del:hover { color: #111; }
+
+  .add-row { display: flex; border: 1px solid #555; }
+  .add-input { flex: 1; border: none; padding: 9px 12px; font-family: Georgia, serif; font-style: italic; font-size: 14px; color: #111; background: #fff; outline: none; min-width: 0; }
+  .add-input::placeholder { color: #aaa; }
+  .add-btn { background: #000; border: none; color: #fff; width: 38px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.15s; }
+  .add-btn:active { opacity: 0.7; }
+
+  .notes-section { padding: 16px; border-top: 2px solid #000; }
+  .notes-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; color: #888; margin-bottom: 8px; }
+  textarea.notes {
+    width: 100%; background: #f7f7f7; border: 1px solid #555;
+    padding: 10px 12px; color: #111; font-family: Georgia, serif;
+    font-style: italic; font-size: 14px; line-height: 1.55; resize: none; outline: none; min-height: 80px;
+  }
+  textarea.notes:focus { border-color: #000; background: #fff; }
+  textarea.notes::placeholder { color: #aaa; }
+
+  .verdict-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #fff; border-top: 2px solid #000;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    z-index: 20;
+  }
+  .balance-track { height: 5px; background: #f0f0f0; border: 1px solid #d0d0d0; position: relative; overflow: hidden; margin-bottom: 6px; }
+  .balance-fill { position: absolute; top: 0; bottom: 0; background: #000; transition: all 0.4s ease; }
+  .verdict-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+  .verdict-side { color: #888; letter-spacing: 0.05em; }
+  .verdict-text { font-weight: 700; color: #111; letter-spacing: 0.1em; text-transform: uppercase; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div id="screen-intro" class="screen active">
+  <div class="intro-top">
+    <div class="app-name">Weigh</div>
+    <div class="app-name-sub">Disclosure dilemma tool</div>
+  </div>
+  <div class="intro-form">
+    <label class="field-label" for="dilemmaInput">What's your dilemma?</label>
+    <textarea id="dilemmaInput" class="dilemma" rows="4"
+      placeholder="Describe the situation you're weighing up…"></textarea>
+    <button class="btn-start" id="beginBtn" disabled onclick="beginAnalysis()">Begin →</button>
+  </div>
+</div>
+
+<!-- ANALYSIS -->
+<div id="screen-analysis" class="screen">
+  <div class="a-header">
+    <button class="btn-back" onclick="goBack()">← Back</button>
+    <div class="a-header-inner">
+      <div class="a-eyebrow">Your Dilemma</div>
+      <div class="a-dilemma" id="headerDilemma"></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-reveal" onclick="switchTab('reveal')">Reveal</button>
+    <button class="tab-btn" id="tab-conceal" onclick="switchTab('conceal')">Conceal</button>
+  </div>
+
+  <div class="a-body">
+
+    <!-- REVEAL -->
+    <div class="panel active" id="panel-reveal">
+      <div class="section-block">
+        <div class="section-heading">Benefits of Revealing</div>
+        <div class="considerations">
+          <div class="c-label">Questions to consider</div>
+          <div class="c-q">What are the possible benefits of revealing?</div>
+          <div class="c-q">Might sharing strengthen trust, as opposed to threatening it?</div>
+          <div class="c-q">Could revealing lead to support, solutions, or relief?</div>
+        </div>
+        <ul class="item-list" id="list-reveal-pro"></ul>
+        <div class="add-row">
+          <input class="add-input" id="input-reveal-pro" placeholder="Add a benefit…" onkeydown="handleKey(event,'reveal-pro')">
+          <button class="add-btn" onclick="addItem('reveal-pro')">+</button>
+        </div>
+      </div>
+      <div class="section-block">
+        <div class="section-heading">Downsides of Revealing</div>
+        <div class="considerations">
+          <div class="c-label">Questions to consider</div>
+          <div class="c-q">What are the possible downsides of revealing?</div>
+          <div class="c-q">How important are these downsides — lasting or short-lived?</div>
+          <div class="c-q">Could revealing damage a relationship or my reputation?</div>
+        </div>
+        <ul class="item-list" id="list-reveal-con"></ul>
+        <div class="add-row">
+          <input class="add-input" id="input-reveal-con" placeholder="Add a downside…" onkeydown="handleKey(event,'reveal-con')">
+          <button class="add-btn" onclick="addItem('reveal-con')">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONCEAL -->
+    <div class="panel" id="panel-conceal">
+      <div class="section-block">
+        <div class="section-heading">Benefits of Concealing</div>
+        <div class="considerations">
+          <div class="c-label">Questions to consider</div>
+          <div class="c-q">What are the possible benefits of holding back?</div>
+          <div class="c-q">How important are these benefits — lasting or short-lived?</div>
+          <div class="c-q">Would I be withholding because it's the best choice, or because it feels easiest?</div>
+        </div>
+        <ul class="item-list" id="list-conceal-pro"></ul>
+        <div class="add-row">
+          <input class="add-input" id="input-conceal-pro" placeholder="Add a benefit…" onkeydown="handleKey(event,'conceal-pro')">
+          <button class="add-btn" onclick="addItem('conceal-pro')">+</button>
+        </div>
+      </div>
+      <div class="section-block">
+        <div class="section-heading">Downsides of Concealing</div>
+        <div class="considerations">
+          <div class="c-label">Questions to consider</div>
+          <div class="c-q">What are the possible downsides of holding back?</div>
+          <div class="c-q">Will keeping it to myself be burdensome or painful?</div>
+          <div class="c-q">Will I ruminate?</div>
+          <div class="c-q">Ten years from now, will I regret having held back?</div>
+        </div>
+        <ul class="item-list" id="list-conceal-con"></ul>
+        <div class="add-row">
+          <input class="add-input" id="input-conceal-con" placeholder="Add a downside…" onkeydown="handleKey(event,'conceal-con')">
+          <button class="add-btn" onclick="addItem('conceal-con')">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="notes-section">
+      <div class="notes-label">Reflection — gut feelings, values, what remains unspoken</div>
+      <textarea class="notes" rows="4"
+        placeholder="Write freely. What does your gut say? What would you tell a friend in this situation?"></textarea>
+    </div>
+  </div>
+
+  <div class="verdict-bar">
+    <div class="balance-track">
+      <div class="balance-fill" id="balanceFill" style="left:50%;width:0%"></div>
+    </div>
+    <div class="verdict-row">
+      <span class="verdict-side">Reveal</span>
+      <span class="verdict-text" id="verdictText">Add items to weigh</span>
+      <span class="verdict-side">Conceal</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const items = { 'reveal-pro':[], 'reveal-con':[], 'conceal-pro':[], 'conceal-con':[] };
+
+  const dilemmaInput = document.getElementById('dilemmaInput');
+  const beginBtn = document.getElementById('beginBtn');
+  dilemmaInput.addEventListener('input', () => {
+    beginBtn.disabled = dilemmaInput.value.trim().length < 5;
+  });
+
+  function beginAnalysis() {
+    document.getElementById('headerDilemma').textContent = dilemmaInput.value.trim();
+    document.getElementById('screen-intro').classList.remove('active');
+    document.getElementById('screen-analysis').classList.add('active');
+    updateBalance();
+  }
+
+  function goBack() {
+    document.getElementById('screen-analysis').classList.remove('active');
+    document.getElementById('screen-intro').classList.add('active');
+  }
+
+  function switchTab(tab) {
+    ['reveal','conceal'].forEach(t => {
+      document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+      document.getElementById('panel-'+t).classList.toggle('active', t===tab);
+    });
+  }
+
+  function handleKey(e, key) {
+    if (e.key === 'Enter') { e.preventDefault(); addItem(key); }
+  }
+
+  function addItem(key) {
+    const input = document.getElementById('input-'+key);
+    const text = input.value.trim();
+    if (!text) return;
+    items[key].push(text);
+    input.value = '';
+    renderList(key);
+    updateBalance();
+  }
+
+  function deleteItem(key, i) {
+    items[key].splice(i, 1);
+    renderList(key);
+    updateBalance();
+  }
+
+  function renderList(key) {
+    const ul = document.getElementById('list-'+key);
+    ul.innerHTML = '';
+    items[key].forEach((text, i) => {
+      const li = document.createElement('li');
+      li.className = 'item-chip';
+      li.innerHTML = `<span class="item-dash">—</span><span class="item-text">${esc(text)}</span><button class="btn-del" onclick="deleteItem('${key}',${i})">✕</button>`;
+      ul.appendChild(li);
+    });
+  }
+
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function updateBalance() {
+    const rp = items['reveal-pro'].length, rc = items['reveal-con'].length;
+    const cp = items['conceal-pro'].length, cc = items['conceal-con'].length;
+    const revScore = rp + cc, conScore = cp + rc, total = revScore + conScore;
+    const fill = document.getElementById('balanceFill');
+    const verdict = document.getElementById('verdictText');
+    if (!total) { fill.style.left='50%'; fill.style.width='0%'; verdict.textContent='Add items to weigh'; return; }
+    if (revScore > conScore) {
+      fill.style.left='0%'; fill.style.width=(revScore/total*100)+'%'; verdict.textContent='Leans Reveal';
+    } else if (conScore > revScore) {
+      const p=conScore/total*100; fill.style.left=(100-p)+'%'; fill.style.width=p+'%'; verdict.textContent='Leans Conceal';
+    } else {
+      fill.style.left='25%'; fill.style.width='50%'; verdict.textContent='Evenly Balanced';
+    }
+  }
+</script>
+</body>
+</html>
