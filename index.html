@@ -100,12 +100,22 @@
   .c-q:last-child { border-bottom: none; }
 
   .item-list { list-style: none; margin-bottom: 10px; }
-  .item-chip { display: flex; align-items: flex-start; gap: 8px; padding: 10px 0; border-bottom: 1px dotted #d0d0d0; font-size: 14px; line-height: 1.5; color: #111; }
+  .item-chip { display: flex; align-items: flex-start; gap: 8px; padding: 12px 0; border-bottom: 1px dotted #d0d0d0; font-size: 14px; line-height: 1.5; color: #111; flex-wrap: wrap; }
   .item-chip:last-child { border-bottom: none; }
   .item-dash { color: #aaa; flex-shrink: 0; margin-top: 2px; font-size: 12px; }
-  .item-text { flex: 1; font-family: Georgia, serif; }
+  .item-text { flex: 1; font-family: Georgia, serif; min-width: 0; }
   .btn-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 11px; flex-shrink: 0; padding: 0; line-height: 1; margin-top: 3px; transition: color 0.15s; }
   .btn-del:hover { color: #111; }
+  .weight-row { width: 100%; display: flex; gap: 6px; padding-left: 18px; margin-top: 6px; }
+  .weight-btn {
+    font-size: 10px; font-family: 'Inter', sans-serif; font-weight: 600;
+    letter-spacing: 0.06em; padding: 3px 9px; border: 1px solid #ccc;
+    background: #fff; color: #aaa; cursor: pointer; border-radius: 20px;
+    transition: all 0.15s;
+  }
+  .weight-btn.active-low  { border-color: #aaa; background: #f0f0f0; color: #444; }
+  .weight-btn.active-med  { border-color: #555; background: #555; color: #fff; }
+  .weight-btn.active-high { border-color: #000; background: #000; color: #fff; }
 
   .add-row { display: flex; border: 1px solid #555; }
   .add-input { flex: 1; border: none; padding: 9px 12px; font-family: Georgia, serif; font-style: italic; font-size: 14px; color: #111; background: #fff; outline: none; min-width: 0; }
@@ -255,7 +265,11 @@
 </div>
 
 <script>
+  // Each item: { text, weight } where weight = 1 (Low), 2 (Med), 3 (High)
   const items = { 'reveal-pro':[], 'reveal-con':[], 'conceal-pro':[], 'conceal-con':[] };
+  const WEIGHTS = { low: 1, med: 2, high: 3 };
+  const LABELS = ['Low', 'Med', 'High'];
+  const KEYS_W = ['low', 'med', 'high'];
 
   const dilemmaInput = document.getElementById('dilemmaInput');
   const beginBtn = document.getElementById('beginBtn');
@@ -290,7 +304,7 @@
     const input = document.getElementById('input-'+key);
     const text = input.value.trim();
     if (!text) return;
-    items[key].push(text);
+    items[key].push({ text, weight: 'med' }); // default Med
     input.value = '';
     renderList(key);
     updateBalance();
@@ -302,22 +316,42 @@
     updateBalance();
   }
 
+  function setWeight(key, i, w) {
+    items[key][i].weight = w;
+    renderList(key);
+    updateBalance();
+  }
+
   function renderList(key) {
     const ul = document.getElementById('list-'+key);
     ul.innerHTML = '';
-    items[key].forEach((text, i) => {
+    items[key].forEach((item, i) => {
       const li = document.createElement('li');
       li.className = 'item-chip';
-      li.innerHTML = `<span class="item-dash">—</span><span class="item-text">${esc(text)}</span><button class="btn-del" onclick="deleteItem('${key}',${i})">✕</button>`;
+      const pillsHtml = KEYS_W.map((w, wi) => {
+        const activeClass = item.weight === w ? `active-${w}` : '';
+        return `<button class="weight-btn ${activeClass}" onclick="setWeight('${key}',${i},'${w}')">${LABELS[wi]}</button>`;
+      }).join('');
+      li.innerHTML = `
+        <span class="item-dash">—</span>
+        <span class="item-text">${esc(item.text)}</span>
+        <button class="btn-del" onclick="deleteItem('${key}',${i})">✕</button>
+        <div class="weight-row">${pillsHtml}</div>
+      `;
       ul.appendChild(li);
     });
   }
 
   function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+  function scoreOf(key) {
+    return items[key].reduce((sum, item) => sum + WEIGHTS[item.weight], 0);
+  }
+
   function updateBalance() {
-    const rp = items['reveal-pro'].length, rc = items['reveal-con'].length;
-    const cp = items['conceal-pro'].length, cc = items['conceal-con'].length;
+    const rp = scoreOf('reveal-pro'), rc = scoreOf('reveal-con');
+    const cp = scoreOf('conceal-pro'), cc = scoreOf('conceal-con');
+    // reveal score = its pros + conceal cons; conceal score = its pros + reveal cons
     const revScore = rp + cc, conScore = cp + rc, total = revScore + conScore;
     const fill = document.getElementById('balanceFill');
     const verdict = document.getElementById('verdictText');
